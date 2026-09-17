@@ -1,0 +1,86 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Query {
+  id            String   @id @default(cuid())
+  name          String
+  keywords      String
+  entityType    String   @default("company")
+  googlePlaceId String?
+  color         String   @default("#0f6e56")
+  active        Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  mentions Mention[]
+  scans    ScanRun[]
+  brandKits BrandKit[]
+}
+
+model BrandKit {
+  id              String   @id @default(cuid())
+  queryId         String
+  version         Int      @default(1)
+  perception      String   @default("[]")
+  toneOfVoice     String   @default("[]")
+  messaging       String   @default("{}")
+  brief           String   @default("")
+  avoid           String   @default("[]")
+  sampleHeadlines String   @default("[]")
+  sourceStats     String   @default("{}")
+  provider        String   @default("heuristic")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  query Query @relation(fields: [queryId], references: [id], onDelete: Cascade)
+
+  @@index([queryId, createdAt])
+}
+
+model Mention {
+  id          String   @id @default(cuid())
+  queryId     String
+  platform    String
+  author      String?
+  title       String?
+  text        String
+  url         String?
+  publishedAt DateTime?
+  sentiment   String
+  score       Float
+  externalId  String?
+  themes      String   @default("[]")
+  rawPayload  String   @default("{}")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  query Query @relation(fields: [queryId], references: [id], onDelete: Cascade)
+
+  @@unique([queryId, platform, externalId])
+  @@index([queryId, publishedAt])
+  @@index([queryId, sentiment])
+  @@index([queryId, platform])
+}
+
+model ScanRun {
+  id             String   @id @default(cuid())
+  queryId        String
+  status         String   @default("pending")
+  sourcesChecked String   @default("[]")
+  queriesRun     Int      @default(0)
+  urlsFound      Int      @default(0)
+  pagesFetched   Int      @default(0)
+  saved          Int      @default(0)
+  durationMs     Int      @default(0)
+  error          String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  query Query @relation(fields: [queryId], references: [id], onDelete: Cascade)
+}
